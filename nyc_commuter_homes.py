@@ -87,7 +87,8 @@ def search_properties_near_stop(stop_data: pd.Series, search_radius_miles: float
     elif 'JOURNAL SQUARE' in stop_name.upper():
         search_location = "Jersey City, NJ"
     elif 'PORT AUTHORITY' in stop_name.upper():
-        search_location = "Weehawken, NJ"  # Close to Port Authority
+        # Port Authority Bus Terminal is in Manhattan
+        search_location = "New York, NY"
     else:
         # For other stops, try to infer from coordinates
         if stop_lat > 40.7 and stop_lon > -74.1:
