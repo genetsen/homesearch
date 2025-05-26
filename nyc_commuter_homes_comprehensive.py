@@ -16,6 +16,10 @@ import math
 from homeharvest import scrape_property
 from geopy.distance import geodesic
 
+# Coordinates for major NYC hubs
+NY_PENN_STATION = (40.750046, -73.992358)
+PORT_AUTHORITY = (40.75722, -73.993143)
+
 def load_transit_data() -> pd.DataFrame:
     """Load the pre-processed transit data with NYC connections."""
     csv_files = [f for f in os.listdir('.') if f.startswith('nj_transit_direct_to_nyc_') and f.endswith('.csv')]
@@ -29,6 +33,39 @@ def load_transit_data() -> pd.DataFrame:
     transit_data = pd.read_csv(latest_file)
     print(f"Loaded {len(transit_data)} transit stops with NYC connections")
     return transit_data
+
+def filter_origin_stops(transit_data: pd.DataFrame, max_travel_minutes: int = 45) -> pd.DataFrame:
+    """Return stops outside NYC with an estimated commute to a major hub <= max_travel_minutes."""
+    print(f"Filtering origin stops (<= {max_travel_minutes} min to NYC)...")
+
+    def is_nyc(row: pd.Series) -> bool:
+        name = str(row['stop_name']).upper()
+        if 'PORT AUTHORITY' in name or 'NEW YORK' in name:
+            return True
+        return False
+
+    stops = transit_data[~transit_data.apply(is_nyc, axis=1)].copy()
+
+    def avg_speed(source: str) -> float:
+        return 40.0 if source == 'rail' else 25.0
+
+    def compute_commute(row: pd.Series) -> pd.Series:
+        speed = avg_speed(row['source'])
+        dist_pabt = geodesic((row['stop_lat'], row['stop_lon']), PORT_AUTHORITY).miles
+        dist_penn = geodesic((row['stop_lat'], row['stop_lon']), NY_PENN_STATION).miles
+        time_pabt = dist_pabt / speed * 60
+        time_penn = dist_penn / speed * 60
+        if time_pabt <= time_penn:
+            return pd.Series({'commute_minutes': time_pabt, 'destination_hub': 'Port Authority Bus Terminal'})
+        else:
+            return pd.Series({'commute_minutes': time_penn, 'destination_hub': 'New York Penn Station'})
+
+    commute_info = stops.apply(compute_commute, axis=1)
+    stops = pd.concat([stops, commute_info], axis=1)
+
+    filtered = stops[stops['commute_minutes'] <= max_travel_minutes].copy()
+    print(f"Selected {len(filtered)} origin stops meeting criteria")
+    return filtered
 
 def cluster_nearby_stops(transit_data: pd.DataFrame, cluster_radius_miles: float = 0.3) -> pd.DataFrame:
     """
@@ -199,7 +236,14 @@ def main():
     try:
         # Load transit data
         transit_data = load_transit_data()
-        
+
+        # Filter to origin stops outside NYC with quick commute
+        transit_data = filter_origin_stops(transit_data, max_travel_minutes=45)
+
+        if transit_data.empty:
+            print("No origin stops meet the travel time requirement.")
+            return
+
         # Cluster nearby stops to avoid redundant searches
         representative_stops = cluster_nearby_stops(transit_data, cluster_radius_miles=0.3)
         
