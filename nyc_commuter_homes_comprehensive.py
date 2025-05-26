@@ -95,7 +95,8 @@ def infer_search_location(stop_data: pd.Series) -> str:
     elif 'JOURNAL SQUARE' in stop_name:
         return "Jersey City, NJ"
     elif 'PORT AUTHORITY' in stop_name:
-        return "Weehawken, NJ"
+        # Search near the Port Authority Bus Terminal in Manhattan
+        return "New York, NY"
     elif 'JERSEY CITY' in stop_name:
         return "Jersey City, NJ"
     elif 'WEEHAWKEN' in stop_name:
