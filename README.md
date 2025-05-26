@@ -8,7 +8,7 @@ This project helps you find residential properties that are:
 - **For sale** in the current market
 - **Within walking distance** (0.5 miles) of major transit stops
 - **Connected by direct routes** to NYC (rail and express bus)
-- **Focused on premium transit hubs** like Hoboken, Journal Square, Newark Penn Station {TODO: this needs to be updated to focused on stops with express service to NYC}
+- **Includes direct-service stops outside NYC** with routes to Port Authority Bus Terminal or New York Penn Station and a travel time of 45 minutes or less
 
 ## 📊 Key Results
 
